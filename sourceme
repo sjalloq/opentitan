@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+
+
+# ----------------------------------------------------------------------
+# OpenTitan Specific
+# ----------------------------------------------------------------------
+
+# Override the default toochain path which expects the root dir /tools
+export TOOLCHAIN_PATH=/eda/riscv
+
+# Set the top level directory path
+export PRJ_DIR=`pwd`
+
+
+# ----------------------------------------------------------------------
+# Set up a venv
+# ----------------------------------------------------------------------
+
+if [ -x ./venv ] ; then
+    source ./venv/bin/activate
+else
+    virtualenv venv
+    source venv/bin/activate
+    pip3 install -r requirements.txt
+fi
+
+export PYTHONPATH=${PRJ_DIR}/venv/lib/python3.6/site-packages:$PYTHONPATH
+
+
+# ----------------------------------------------------------------------
+# Useful functions
+# ----------------------------------------------------------------------
+
+# Looks for any strings containing warnings in a file.
+#
+warn () {
+    filename=$1
+    shift
+    grep -e WARNING -e Warning -e warning $filename |
+	if [ $# -get 0 ]; then
+	    while (($#)); do
+		grep -v $1
+		shift
+	    done
+	else
+	    cat
+	fi
+}
+
+
+# Looks for any strings containing errors in a file.
+#
+error () {
+    filename=$1
+    shift
+    grep -e ERROR -e Error -e error $filename |
+	if [ $# -gt 0 ]; then
+	    while (($#)); do
+		grep -v $1
+		shift
+	    done
+	else
+	    cat
+	fi
+}
+
+
+# Shortcut for 'git add'ing all modified files.
+#
+add_all_modified () {
+    git status -uno | grep modified | awk '{print $3}' | xargs git add
+}
+
+
+# Looks for any Git revisioned files that have been modified and
+# launches tkdiff to compare against the last committed version.
+#
+tkdiff_all_modified() {
+    retdir=`pwd`
+    cd `git rev-parse --show-toplevel`
+    git status -uno | grep modified | awk '{print $3}' | xargs -n 1 tkdiff
+    cd $retdir
+}
+
+
+# Take a path or file and makes it readable by all.
+#
+make_readable() {
+    path=$1
+    if [ -f "$path" ] || [ -d "$path"]; then
+	rpath=`realpath $path`
+	while [ "$rpath" != "" ]; do
+	    if [ -f "$rpath" ]; then
+		chmod a+r "$rpath"
+	    else
+		if [[ -O "$rpath" ]]; then 
+		    chmod a+rx "$rpath"
+		fi
+	    fi
+	    rpath=${rpath%/*}
+	done
+    else
+	echo "$path doesn't exist"
+    fi
+}

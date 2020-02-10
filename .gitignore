@@ -2,6 +2,7 @@
 *.bak
 __pycache__
 opentitan-docs
+venv
 
 # fusesoc result
 build/

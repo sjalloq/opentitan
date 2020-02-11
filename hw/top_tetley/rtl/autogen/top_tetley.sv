@@ -33,15 +33,6 @@ module top_tetley #(
   input               dio_uart_rx_i,
   output logic        dio_uart_tx_o,
   output logic        dio_uart_tx_en_o,
-  input               dio_usbdev_sense_i,
-  output logic        dio_usbdev_pullup_o,
-  output logic        dio_usbdev_pullup_en_o,
-  input               dio_usbdev_dp_i,
-  output logic        dio_usbdev_dp_o,
-  output logic        dio_usbdev_dp_en_o,
-  input               dio_usbdev_dn_i,
-  output logic        dio_usbdev_dn_o,
-  output logic        dio_usbdev_dn_en_o,
 
   input               scanmode_i  // 1 for Scan
 );
@@ -85,10 +76,6 @@ module top_tetley #(
   tl_d2h_t  tl_flash_ctrl_d_d2h;
   tl_h2d_t  tl_rv_timer_d_h2d;
   tl_d2h_t  tl_rv_timer_d_d2h;
-  tl_h2d_t  tl_aes_d_h2d;
-  tl_d2h_t  tl_aes_d_d2h;
-  tl_h2d_t  tl_hmac_d_h2d;
-  tl_d2h_t  tl_hmac_d_d2h;
   tl_h2d_t  tl_rv_plic_d_h2d;
   tl_d2h_t  tl_rv_plic_d_d2h;
   tl_h2d_t  tl_pinmux_d_h2d;
@@ -97,8 +84,6 @@ module top_tetley #(
   tl_d2h_t  tl_alert_handler_d_d2h;
   tl_h2d_t  tl_nmi_gen_d_h2d;
   tl_d2h_t  tl_nmi_gen_d_d2h;
-  tl_h2d_t  tl_usbdev_d_h2d;
-  tl_d2h_t  tl_usbdev_d_d2h;
 
   tl_h2d_t tl_rom_d_h2d;
   tl_d2h_t tl_rom_d_d2h;
@@ -120,12 +105,10 @@ module top_tetley #(
   logic sys_rst_n;
   logic sys_fixed_rst_n;
   logic spi_device_rst_n;
-  logic usb_rst_n;
 
   //clock wires declaration
   logic main_clk;
   logic fixed_clk;
-  logic usb_clk;
 
   // Signals
   logic [31:0] m2p;
@@ -147,25 +130,13 @@ module top_tetley #(
   logic        cio_spi_device_miso_en_d2p;
   // flash_ctrl
   // rv_timer
-  // aes
-  // hmac
   // rv_plic
   // pinmux
   // alert_handler
   // nmi_gen
-  // usbdev
-  logic        cio_usbdev_sense_p2d;
-  logic        cio_usbdev_dp_p2d;
-  logic        cio_usbdev_dn_p2d;
-  logic        cio_usbdev_pullup_d2p;
-  logic        cio_usbdev_pullup_en_d2p;
-  logic        cio_usbdev_dp_d2p;
-  logic        cio_usbdev_dp_en_d2p;
-  logic        cio_usbdev_dn_d2p;
-  logic        cio_usbdev_dn_en_d2p;
 
 
-  logic [78:0]  intr_vector;
+  logic [59:0]  intr_vector;
   // Interrupt source list
   logic intr_uart_tx_watermark;
   logic intr_uart_rx_watermark;
@@ -189,9 +160,6 @@ module top_tetley #(
   logic intr_flash_ctrl_op_done;
   logic intr_flash_ctrl_op_error;
   logic intr_rv_timer_timer_expired_0_0;
-  logic intr_hmac_hmac_done;
-  logic intr_hmac_fifo_full;
-  logic intr_hmac_hmac_err;
   logic intr_alert_handler_classa;
   logic intr_alert_handler_classb;
   logic intr_alert_handler_classc;
@@ -200,29 +168,13 @@ module top_tetley #(
   logic intr_nmi_gen_esc1;
   logic intr_nmi_gen_esc2;
   logic intr_nmi_gen_esc3;
-  logic intr_usbdev_pkt_received;
-  logic intr_usbdev_pkt_sent;
-  logic intr_usbdev_disconnected;
-  logic intr_usbdev_host_lost;
-  logic intr_usbdev_link_reset;
-  logic intr_usbdev_link_suspend;
-  logic intr_usbdev_link_resume;
-  logic intr_usbdev_av_empty;
-  logic intr_usbdev_rx_full;
-  logic intr_usbdev_av_overflow;
-  logic intr_usbdev_link_in_err;
-  logic intr_usbdev_rx_crc_err;
-  logic intr_usbdev_rx_pid_err;
-  logic intr_usbdev_rx_bitstuff_err;
-  logic intr_usbdev_frame;
-  logic intr_usbdev_connected;
 
 
   
   logic [0:0] irq_plic;
   logic [0:0] msip;
-  logic [6:0] irq_id[1];
-  logic [6:0] unused_irq_id[1];
+  logic [5:0] irq_id[1];
+  logic [5:0] unused_irq_id[1];
 
   // this avoids lint errors
   assign unused_irq_id = irq_id;
@@ -234,6 +186,11 @@ module top_tetley #(
   prim_pkg::esc_tx_t [alert_pkg::N_ESC_SEV-1:0]  esc_tx;
   prim_pkg::esc_rx_t [alert_pkg::N_ESC_SEV-1:0]  esc_rx;
 
+  for (genvar k = 0; k < alert_pkg::NAlerts; k++) begin : gen_alert_tie_off
+    // tie off if no alerts present in the system
+    assign alert_tx[k].alert_p = 1'b0;
+    assign alert_tx[k].alert_n = 1'b1;
+  end
 
   // Clock assignments
   assign main_clk = clk_i;
@@ -576,31 +533,6 @@ module top_tetley #(
       .rst_ni (sys_fixed_rst_n)
   );
 
-  aes aes (
-      .tl_i (tl_aes_d_h2d),
-      .tl_o (tl_aes_d_d2h),
-
-      .clk_i (main_clk),
-      .rst_ni (sys_rst_n)
-  );
-
-  hmac hmac (
-      .tl_i (tl_hmac_d_h2d),
-      .tl_o (tl_hmac_d_d2h),
-
-      // Interrupt
-      .intr_hmac_done_o (intr_hmac_hmac_done),
-      .intr_fifo_full_o (intr_hmac_fifo_full),
-      .intr_hmac_err_o  (intr_hmac_hmac_err),
-      
-      // [0]: msg_push_sha_disabled 
-      .alert_tx_o  ( alert_tx[0:0] ),
-      .alert_rx_i  ( alert_rx[0:0] ),
-
-      .clk_i (main_clk),
-      .rst_ni (sys_rst_n)
-  );
-
   rv_plic rv_plic (
       .tl_i (tl_rv_plic_d_h2d),
       .tl_o (tl_rv_plic_d_d2h),
@@ -671,74 +603,12 @@ module top_tetley #(
       .rst_ni (sys_rst_n)
   );
 
-  usbdev usbdev (
-      .tl_i (tl_usbdev_d_h2d),
-      .tl_o (tl_usbdev_d_d2h),
-
-      // Differential data - Currently not used.
-      .cio_d_i          (1'b0),
-      .cio_d_o          (),
-      .cio_se0_o        (),
-
-      // Single-ended data
-      .cio_dp_i         (cio_usbdev_dp_p2d),
-      .cio_dn_i         (cio_usbdev_dn_p2d),
-      .cio_dp_o         (cio_usbdev_dp_d2p),
-      .cio_dn_o         (cio_usbdev_dn_d2p),
-
-      // Non-data I/O
-      .cio_sense_i      (cio_usbdev_sense_p2d),
-      .cio_oe_o         (cio_usbdev_dp_en_d2p),
-      .cio_tx_mode_se_o (),
-      .cio_pullup_en_o  (cio_usbdev_pullup_en_d2p),
-      .cio_suspend_o    (),
-
-      // Interrupt
-      .intr_pkt_received_o    (intr_usbdev_pkt_received),
-      .intr_pkt_sent_o        (intr_usbdev_pkt_sent),
-      .intr_disconnected_o    (intr_usbdev_disconnected),
-      .intr_host_lost_o       (intr_usbdev_host_lost),
-      .intr_link_reset_o      (intr_usbdev_link_reset),
-      .intr_link_suspend_o    (intr_usbdev_link_suspend),
-      .intr_link_resume_o     (intr_usbdev_link_resume),
-      .intr_av_empty_o        (intr_usbdev_av_empty),
-      .intr_rx_full_o         (intr_usbdev_rx_full),
-      .intr_av_overflow_o     (intr_usbdev_av_overflow),
-      .intr_link_in_err_o     (intr_usbdev_link_in_err),
-      .intr_rx_crc_err_o      (intr_usbdev_rx_crc_err),
-      .intr_rx_pid_err_o      (intr_usbdev_rx_pid_err),
-      .intr_rx_bitstuff_err_o (intr_usbdev_rx_bitstuff_err),
-      .intr_frame_o           (intr_usbdev_frame),
-      .intr_connected_o       (intr_usbdev_connected),
-
-      .clk_i (fixed_clk),
-      .clk_usb_48mhz_i (usb_clk),
-      .rst_ni (sys_fixed_rst_n),
-      .rst_usb_48mhz_ni (usb_rst_n)
-  );
-
   // USB assignments
   assign cio_usbdev_dn_en_d2p = cio_usbdev_dp_en_d2p; // have a single output enable only
   assign cio_usbdev_pullup_d2p = 1'b1;
 
   // interrupt assignments
   assign intr_vector = {
-      intr_usbdev_connected,
-      intr_usbdev_frame,
-      intr_usbdev_rx_bitstuff_err,
-      intr_usbdev_rx_pid_err,
-      intr_usbdev_rx_crc_err,
-      intr_usbdev_link_in_err,
-      intr_usbdev_av_overflow,
-      intr_usbdev_rx_full,
-      intr_usbdev_av_empty,
-      intr_usbdev_link_resume,
-      intr_usbdev_link_suspend,
-      intr_usbdev_link_reset,
-      intr_usbdev_host_lost,
-      intr_usbdev_disconnected,
-      intr_usbdev_pkt_sent,
-      intr_usbdev_pkt_received,
       intr_nmi_gen_esc3,
       intr_nmi_gen_esc2,
       intr_nmi_gen_esc1,
@@ -747,9 +617,6 @@ module top_tetley #(
       intr_alert_handler_classc,
       intr_alert_handler_classb,
       intr_alert_handler_classa,
-      intr_hmac_hmac_err,
-      intr_hmac_fifo_full,
-      intr_hmac_hmac_done,
       intr_flash_ctrl_op_error,
       intr_flash_ctrl_op_done,
       intr_flash_ctrl_rd_lvl,
@@ -797,10 +664,6 @@ module top_tetley #(
     .tl_peri_i          (tl_peri_d_d2h),
     .tl_flash_ctrl_o    (tl_flash_ctrl_d_h2d),
     .tl_flash_ctrl_i    (tl_flash_ctrl_d_d2h),
-    .tl_hmac_o          (tl_hmac_d_h2d),
-    .tl_hmac_i          (tl_hmac_d_d2h),
-    .tl_aes_o           (tl_aes_d_h2d),
-    .tl_aes_i           (tl_aes_d_d2h),
     .tl_rv_plic_o       (tl_rv_plic_d_h2d),
     .tl_rv_plic_i       (tl_rv_plic_d_d2h),
     .tl_pinmux_o        (tl_pinmux_d_h2d),
@@ -825,8 +688,6 @@ module top_tetley #(
     .tl_spi_device_i (tl_spi_device_d_d2h),
     .tl_rv_timer_o   (tl_rv_timer_d_h2d),
     .tl_rv_timer_i   (tl_rv_timer_d_d2h),
-    .tl_usbdev_o     (tl_usbdev_d_h2d),
-    .tl_usbdev_i     (tl_usbdev_d_d2h),
 
     .scanmode_i
   );
@@ -850,15 +711,6 @@ module top_tetley #(
   assign cio_uart_rx_p2d          = dio_uart_rx_i;
   assign dio_uart_tx_o            = cio_uart_tx_d2p;
   assign dio_uart_tx_en_o         = cio_uart_tx_en_d2p;
-  assign cio_usbdev_sense_p2d     = dio_usbdev_sense_i;
-  assign dio_usbdev_pullup_o      = cio_usbdev_pullup_d2p;
-  assign dio_usbdev_pullup_en_o   = cio_usbdev_pullup_en_d2p;
-  assign cio_usbdev_dp_p2d        = dio_usbdev_dp_i;
-  assign dio_usbdev_dp_o          = cio_usbdev_dp_d2p;
-  assign dio_usbdev_dp_en_o       = cio_usbdev_dp_en_d2p;
-  assign cio_usbdev_dn_p2d        = dio_usbdev_dn_i;
-  assign dio_usbdev_dn_o          = cio_usbdev_dn_d2p;
-  assign dio_usbdev_dn_en_o       = cio_usbdev_dn_en_d2p;
 
   // make sure scanmode_i is never X (including during reset)
   `ASSERT_KNOWN(scanmodeKnown, scanmode_i, clk_i, 0)

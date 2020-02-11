@@ -19,10 +19,6 @@
       name: fixed
       freq: "100000000"
     }
-    {
-      name: usb
-      freq: "48000000"
-    }
   ]
   resets:
   [
@@ -47,12 +43,6 @@
       type: leaf
       root: sys
       clk: fixed
-    }
-    {
-      name: usb
-      type: leaf
-      root: sys
-      clk: usb
     }
   ]
   num_cores: "1"
@@ -334,75 +324,6 @@
       scan: "false"
     }
     {
-      name: aes
-      type: aes
-      clock_connections:
-      {
-        clk_i: main
-      }
-      reset_connections:
-      {
-        rst_ni: sys
-      }
-      base_addr: 0x40110000
-      size: 0x1000
-      bus_device: tlul
-      bus_host: none
-      available_input_list: []
-      available_output_list: []
-      available_inout_list: []
-      interrupt_list: []
-      alert_list: []
-      scan: "false"
-    }
-    {
-      name: hmac
-      type: hmac
-      clock_connections:
-      {
-        clk_i: main
-      }
-      reset_connections:
-      {
-        rst_ni: sys
-      }
-      base_addr: 0x40120000
-      size: 0x1000
-      bus_device: tlul
-      bus_host: none
-      available_input_list: []
-      available_output_list: []
-      available_inout_list: []
-      interrupt_list:
-      [
-        {
-          name: hmac_done
-          width: 1
-          type: interrupt
-        }
-        {
-          name: fifo_full
-          width: 1
-          type: interrupt
-        }
-        {
-          name: hmac_err
-          width: 1
-          type: interrupt
-        }
-      ]
-      alert_list:
-      [
-        {
-          name: msg_push_sha_disabled
-          width: 1
-          type: alert
-          async: 0
-        }
-      ]
-      scan: "false"
-    }
-    {
       name: rv_plic
       type: rv_plic
       clock_connections:
@@ -544,138 +465,6 @@
       alert_list: []
       scan: "false"
     }
-    {
-      name: usbdev
-      type: usbdev
-      clock_connections:
-      {
-        clk_i: fixed
-        clk_usb_48mhz_i: usb
-      }
-      reset_connections:
-      {
-        rst_ni: sys_fixed
-        rst_usb_48mhz_ni: usb
-      }
-      base_addr: 0x40150000
-      size: 0x1000
-      bus_device: tlul
-      bus_host: none
-      available_input_list:
-      [
-        {
-          name: sense
-          width: 1
-          type: input
-        }
-      ]
-      available_output_list:
-      [
-        {
-          name: pullup
-          width: 1
-          type: output
-        }
-      ]
-      available_inout_list:
-      [
-        {
-          name: dp
-          width: 1
-          type: inout
-        }
-        {
-          name: dn
-          width: 1
-          type: inout
-        }
-      ]
-      interrupt_list:
-      [
-        {
-          name: pkt_received
-          width: 1
-          type: interrupt
-        }
-        {
-          name: pkt_sent
-          width: 1
-          type: interrupt
-        }
-        {
-          name: disconnected
-          width: 1
-          type: interrupt
-        }
-        {
-          name: host_lost
-          width: 1
-          type: interrupt
-        }
-        {
-          name: link_reset
-          width: 1
-          type: interrupt
-        }
-        {
-          name: link_suspend
-          width: 1
-          type: interrupt
-        }
-        {
-          name: link_resume
-          width: 1
-          type: interrupt
-        }
-        {
-          name: av_empty
-          width: 1
-          type: interrupt
-        }
-        {
-          name: rx_full
-          width: 1
-          type: interrupt
-        }
-        {
-          name: av_overflow
-          width: 1
-          type: interrupt
-        }
-        {
-          name: link_in_err
-          width: 1
-          type: interrupt
-        }
-        {
-          name: rx_crc_err
-          width: 1
-          type: interrupt
-        }
-        {
-          name: rx_pid_err
-          width: 1
-          type: interrupt
-        }
-        {
-          name: rx_bitstuff_err
-          width: 1
-          type: interrupt
-        }
-        {
-          name: frame
-          width: 1
-          type: interrupt
-        }
-        {
-          name: connected
-          width: 1
-          type: interrupt
-        }
-      ]
-      alert_list: []
-      scan: "false"
-    }
   ]
   memory:
   [
@@ -719,7 +508,7 @@
       }
       type: eflash
       base_addr: 0x20000000
-      size: 0x80000
+      size: 0x40000
     }
   ]
   xbar:
@@ -754,8 +543,6 @@
           eflash
           peri
           flash_ctrl
-          aes
-          hmac
           rv_plic
           pinmux
           alert_handler
@@ -768,8 +555,6 @@
           eflash
           peri
           flash_ctrl
-          aes
-          hmac
           rv_plic
           pinmux
           alert_handler
@@ -870,7 +655,7 @@
           [
             {
               base_addr: 0x20000000
-              size_byte: 0x80000
+              size_byte: 0x40000
             }
           ]
           xbar: false
@@ -902,10 +687,6 @@
               base_addr: 0x40080000
               size_byte: 0x1000
             }
-            {
-              base_addr: 0x40150000
-              size_byte: 0x1000
-            }
           ]
         }
         {
@@ -919,40 +700,6 @@
           [
             {
               base_addr: 0x40030000
-              size_byte: 0x1000
-            }
-          ]
-          xbar: false
-          pipeline: "true"
-        }
-        {
-          name: hmac
-          type: device
-          clock: clk_main_i
-          reset: rst_main_ni
-          pipeline_byp: "false"
-          inst_type: hmac
-          addr_range:
-          [
-            {
-              base_addr: 0x40120000
-              size_byte: 0x1000
-            }
-          ]
-          xbar: false
-          pipeline: "true"
-        }
-        {
-          name: aes
-          type: device
-          clock: clk_main_i
-          reset: rst_main_ni
-          pipeline_byp: "false"
-          inst_type: aes
-          addr_range:
-          [
-            {
-              base_addr: 0x40110000
               size_byte: 0x1000
             }
           ]
@@ -1047,7 +794,6 @@
           gpio
           spi_device
           rv_timer
-          usbdev
         ]
       }
       nodes:
@@ -1130,23 +876,6 @@
           xbar: false
           pipeline_byp: "true"
         }
-        {
-          name: usbdev
-          type: device
-          clock: clk_peri_i
-          reset: rst_peri_ni
-          pipeline: "false"
-          inst_type: usbdev
-          addr_range:
-          [
-            {
-              base_addr: 0x40150000
-              size_byte: 0x1000
-            }
-          ]
-          xbar: false
-          pipeline_byp: "true"
-        }
       ]
       clock: clk_peri_i
     }
@@ -1157,10 +886,8 @@
     uart
     spi_device
     flash_ctrl
-    hmac
     alert_handler
     nmi_gen
-    usbdev
   ]
   interrupt:
   [
@@ -1270,21 +997,6 @@
       type: interrupt
     }
     {
-      name: hmac_hmac_done
-      width: 1
-      type: interrupt
-    }
-    {
-      name: hmac_fifo_full
-      width: 1
-      type: interrupt
-    }
-    {
-      name: hmac_hmac_err
-      width: 1
-      type: interrupt
-    }
-    {
       name: alert_handler_classa
       width: 1
       type: interrupt
@@ -1324,100 +1036,9 @@
       width: 1
       type: interrupt
     }
-    {
-      name: usbdev_pkt_received
-      width: 1
-      type: interrupt
-    }
-    {
-      name: usbdev_pkt_sent
-      width: 1
-      type: interrupt
-    }
-    {
-      name: usbdev_disconnected
-      width: 1
-      type: interrupt
-    }
-    {
-      name: usbdev_host_lost
-      width: 1
-      type: interrupt
-    }
-    {
-      name: usbdev_link_reset
-      width: 1
-      type: interrupt
-    }
-    {
-      name: usbdev_link_suspend
-      width: 1
-      type: interrupt
-    }
-    {
-      name: usbdev_link_resume
-      width: 1
-      type: interrupt
-    }
-    {
-      name: usbdev_av_empty
-      width: 1
-      type: interrupt
-    }
-    {
-      name: usbdev_rx_full
-      width: 1
-      type: interrupt
-    }
-    {
-      name: usbdev_av_overflow
-      width: 1
-      type: interrupt
-    }
-    {
-      name: usbdev_link_in_err
-      width: 1
-      type: interrupt
-    }
-    {
-      name: usbdev_rx_crc_err
-      width: 1
-      type: interrupt
-    }
-    {
-      name: usbdev_rx_pid_err
-      width: 1
-      type: interrupt
-    }
-    {
-      name: usbdev_rx_bitstuff_err
-      width: 1
-      type: interrupt
-    }
-    {
-      name: usbdev_frame
-      width: 1
-      type: interrupt
-    }
-    {
-      name: usbdev_connected
-      width: 1
-      type: interrupt
-    }
   ]
-  alert_module:
-  [
-    hmac
-  ]
-  alert:
-  [
-    {
-      name: hmac_msg_push_sha_disabled
-      width: 1
-      type: alert
-      async: 0
-    }
-  ]
+  alert_module: []
+  alert: []
   pinmux:
   {
     num_mio: 32
@@ -1437,13 +1058,6 @@
           ChA[0..1]
         ]
       }
-      {
-        name: usbdev
-        pad:
-        [
-          ChC[0..3]
-        ]
-      }
     ]
     mio_modules:
     [
@@ -1453,7 +1067,6 @@
     nc_modules:
     [
       rv_timer
-      hmac
     ]
     dio:
     [
@@ -1526,54 +1139,6 @@
           {
             name: ChA
             index: 1
-          }
-        ]
-      }
-      {
-        name: usbdev_sense
-        width: 1
-        type: input
-        pad:
-        [
-          {
-            name: ChC
-            index: 0
-          }
-        ]
-      }
-      {
-        name: usbdev_pullup
-        width: 1
-        type: output
-        pad:
-        [
-          {
-            name: ChC
-            index: 1
-          }
-        ]
-      }
-      {
-        name: usbdev_dp
-        width: 1
-        type: inout
-        pad:
-        [
-          {
-            name: ChC
-            index: 2
-          }
-        ]
-      }
-      {
-        name: usbdev_dn
-        width: 1
-        type: inout
-        pad:
-        [
-          {
-            name: ChC
-            index: 3
           }
         ]
       }

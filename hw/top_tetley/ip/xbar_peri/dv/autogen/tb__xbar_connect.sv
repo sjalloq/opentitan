@@ -19,4 +19,3 @@ xbar_peri dut(
 `CONNECT_TL_DEVICE_IF(gpio)
 `CONNECT_TL_DEVICE_IF(spi_device)
 `CONNECT_TL_DEVICE_IF(rv_timer)
-`CONNECT_TL_DEVICE_IF(usbdev)

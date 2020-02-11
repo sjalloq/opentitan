@@ -11,21 +11,18 @@
       clock: "clk_main_i",
       reset: "rst_main_ni",
       pipeline: "false"
-
     },
     { name:  "cored",
       type:  "host",
       clock: "clk_main_i",
       reset: "rst_main_ni",
       pipeline: "false"
-
     },
     { name:  "dm_sba", // DM
       type:  "host",
       clock: "clk_main_i",
       reset: "rst_main_ni",
       pipeline_byp: "false"
-
     },
     { name:      "rom",
       type:      "device",
@@ -61,18 +58,6 @@
       type:      "device",
       clock:     "clk_main_i",
       reset:     "rst_main_ni",
-      pipeline_byp: "false"
-    },
-    { name:      "hmac",
-      type:      "device",
-      clock:     "clk_main_i",
-      reset:     "rst_main_ni",
-      pipeline_byp: "false"
-    },
-    { name:      "aes",
-      type:      "device",
-      clock:     "clk_main_i"
-      reset:     "rst_main_ni"
       pipeline_byp: "false"
     },
     { name:      "rv_plic",
@@ -114,9 +99,7 @@
   ],
   connections: {
     corei:  ["rom", "debug_mem", "ram_main", "eflash"],
-    cored:  ["rom", "debug_mem", "ram_main", "eflash", "peri", "flash_ctrl",
-    "aes", "hmac", "rv_plic", "pinmux", "alert_handler", "nmi_gen"],
-    dm_sba: ["rom",              "ram_main", "eflash", "peri", "flash_ctrl",
-    "aes", "hmac", "rv_plic", "pinmux", "alert_handler", "nmi_gen"],
+    cored:  ["rom", "debug_mem", "ram_main", "eflash", "peri", "flash_ctrl", "rv_plic", "pinmux", "alert_handler", "nmi_gen"],
+    dm_sba: ["rom",              "ram_main", "eflash", "peri", "flash_ctrl", "rv_plic", "pinmux", "alert_handler", "nmi_gen"],
   },
 }
